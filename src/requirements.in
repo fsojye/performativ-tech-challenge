@@ -3,3 +3,8 @@ ruff
 
 pytest
 pytest-cov
+
+dotenv
+requests
+pandas
+pydantic

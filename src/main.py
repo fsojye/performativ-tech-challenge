@@ -1,40 +1,54 @@
 import sys
-from typing import Optional
+from argparse import ArgumentParser
 
-from controllers.financial_metrics_controller import FinancialMetricsController
-from services.positions_file_loader import PositionsFileLoader
-
-
-class Main:
-    def __init__(
-        self,
-        positions_file_loader: Optional[PositionsFileLoader] = None,
-        financial_metrics_controller: Optional[FinancialMetricsController] = None,
-    ):
-        self.positions_file_loader = positions_file_loader or PositionsFileLoader()
-        self.financial_metrics_controller = (
-            financial_metrics_controller or FinancialMetricsController()
-        )
-
-    def run(self, path_to_positions_file: str) -> str:
-        try:
-            return self._run(path_to_positions_file)
-        except Exception as e:
-            raise MainException(str(e)) from e
-
-    def _run(self, path_to_positions_file: str) -> str:
-        positions_data = self.positions_file_loader.load(path_to_positions_file)
-        return self.financial_metrics_controller.calculate_metrics(positions_data)
+from controllers.main_controller import MainController
 
 
-class MainException(Exception):
-    pass
+def main():
+    parser = ArgumentParser(
+        description="Calculate simplified financial metrics for a set of positions over a specified time window."
+    )
+
+    parser.add_argument(
+        "--positions-file",
+        type=str,
+        required=True,
+        help="Path to the JSON file containing position data (e.g., 'tech-challenge-2025-positions.json').",
+    )
+
+    parser.add_argument(
+        "--target-currency",
+        type=str,
+        help="The target currency (TC) for conversion (e.g., 'USD').",
+        default="USD",
+    )
+
+    parser.add_argument(
+        "--start-date",
+        type=str,
+        help="The start date of the time window (Format: YYYY-MM-DD).",
+        default="2023-01-01",
+    )
+
+    parser.add_argument(
+        "--end-date",
+        type=str,
+        help="The end date of the time window (Format: YYYY-MM-DD).",
+        default="2024-11-10",
+    )
+
+    args = parser.parse_args()
+
+    return MainController(
+        args.positions_file, args.target_currency, args.start_date, args.end_date
+    ).run()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        print(Main().run(sys.argv[1]))
-        sys.exit()
-
-    print("Invalid command supplied")
-    sys.exit(1)
+    result = main()
+    print(result)
+    sys.exit()
+    # try:
+    # except Exception as e:
+    #     print(e)
+    #     sys.exit(1)

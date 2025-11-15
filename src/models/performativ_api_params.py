@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from numpy import trunc
+
 from entities.metrics import BaseMetric, FinancialMetrics
 
 
@@ -48,13 +50,14 @@ class BasePayload:
     @classmethod
     def from_metric(cls, metric: BaseMetric) -> BasePayload:
         precision = 8
+        truncate = lambda value: (trunc(value * 10**precision) / 10**precision)
         return cls(
-            IsOpen=metric.is_open.round(precision).tolist(),
-            Price=metric.price.round(precision).tolist(),
-            Value=metric.value.round(precision).tolist(),
-            ReturnPerPeriod=metric.return_per_period.round(precision).tolist(),
-            ReturnPerPeriodPercentage=metric.return_per_period_percentage.round(
-                precision
+            IsOpen=metric.is_open.tolist(),
+            Price=truncate(metric.price).tolist(),
+            Value=truncate(metric.value).tolist(),
+            ReturnPerPeriod=truncate(metric.return_per_period).tolist(),
+            ReturnPerPeriodPercentage=truncate(
+                metric.return_per_period_percentage
             ).tolist(),
         )
 

@@ -98,9 +98,6 @@ class FinancialMetricsCalculator:
             date=to_datetime(fx_df["date"] if "date" in fx_df.columns else date_series),
             rate=fx_df["rate"] if "rate" in fx_df.columns else 1.0,
         )
-        fx_df = fx_df.set_index("date").reindex(
-            to_datetime(date_series), fill_value=1.0
-        )
         return fx_df
 
     def _get_instrument_prices_dataframe(
@@ -110,5 +107,4 @@ class FinancialMetricsCalculator:
         prices_data: dict[str, dict[str, str]],
     ) -> DataFrame:
         prices_df = DataFrame(prices_data[instrument_id], index=date_series)
-        prices_df.set_index("date").reindex(to_datetime(date_series))
         return prices_df

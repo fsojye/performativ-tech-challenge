@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import json
 from datetime import date
 
@@ -64,10 +65,16 @@ class MainController:
             self.target_currency, self.start_date, self.end_date
         )
         post_submit_payload = PostSubmitPayload.from_metric(financial_metrics)
-        print(post_submit_payload)
-        return json.dumps(
-            self.performativ_api_repo.post_submit_financial_metrics(post_submit_payload)
+
+        result = json.dumps(
+            self.performativ_api_repo.post_submit_financial_metrics(
+                post_submit_payload
+            ),
+            indent=4,
         )
+
+        print(json.dumps(asdict(post_submit_payload), indent=4))
+        return result
 
 
 class MainControllerException(Exception):

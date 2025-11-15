@@ -1,19 +1,18 @@
 from dataclasses import asdict
-from typing import Optional
-import typing
+
 from requests import Session
 
-from repositories.enviroment_loader import config
 from models.performativ_api_params import (
     BasePerformativApiParams,
     GetFxRatesParams,
     GetInstrumentPricesParams,
     PostSubmitPayload,
 )
+from repositories.enviroment_loader import config
 
 
 class PerformativApiRepo:
-    def __init__(self, session: Optional[Session] = None):
+    def __init__(self, session: Session | None = None):
         self.session = session or Session()
         self.url = config.PERFORMATIV_API_URL
         self.session.headers.update(
@@ -42,4 +41,4 @@ class PerformativApiRepo:
     ) -> dict[str, str]:
         endpoint = "submit"
         response = self.session.post(url=f"{self.url}/{endpoint}", json=asdict(payload))
-        return response.json()
+        return response.json()  # type: ignore

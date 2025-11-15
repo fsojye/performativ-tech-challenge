@@ -1,19 +1,19 @@
 from datetime import date
-from typing import Optional
 
-from numpy import ndarray
+from numpy.typing import NDArray
 from pandas import DataFrame
-from repositories.performativ_api_repo import PerformativApiRepo
+
+from models.performativ_api_params import GetFxRatesParams, GetInstrumentPricesParams
 from models.performativ_resource import PerformativResource
 from models.positions_data import PositionsData
-from models.performativ_api_params import GetFxRatesParams, GetInstrumentPricesParams
+from repositories.performativ_api_repo import PerformativApiRepo
 
 
 class PerformativResourceLoader:
     def __init__(
         self,
         positions_data: PositionsData,
-        performativ_api_repo: Optional[PerformativApiRepo] = None,
+        performativ_api_repo: PerformativApiRepo | None = None,
     ):
         self._positions_data = positions_data
         self._performativ_api_repo = performativ_api_repo or PerformativApiRepo()
@@ -38,19 +38,19 @@ class PerformativResourceLoader:
 
     def _get_unique_fx_pairs(
         self, positions_df: DataFrame, target_currency: str
-    ) -> ndarray:
-        return (
+    ) -> NDArray:
+        return (  # type: ignore
             positions_df[positions_df["instrument_currency"] != target_currency][
                 "instrument_currency"
             ]
             + target_currency
         ).unique()
 
-    def _get_unique_instrument_ids(self, positions_df: DataFrame) -> ndarray:
-        return positions_df["instrument_id"].unique()
+    def _get_unique_instrument_ids(self, positions_df: DataFrame) -> NDArray:
+        return positions_df["instrument_id"].unique()  # type: ignore
 
     def _get_fx_rates_by_dates(
-        self, fx_pairs: list[str], start_date: str, end_date: str
+        self, fx_pairs: NDArray, start_date: str, end_date: str
     ) -> dict:
         return self._performativ_api_repo.get_fx_rates_by_dates(
             params=GetFxRatesParams(
@@ -59,7 +59,7 @@ class PerformativResourceLoader:
         )
 
     def _get_prices_by_dates(
-        self, instrument_ids: list[str], start_date: str, end_date: str
+        self, instrument_ids: NDArray, start_date: str, end_date: str
     ) -> dict:
         instrument_prices = {}
         for instrument_id in instrument_ids:

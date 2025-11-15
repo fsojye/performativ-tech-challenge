@@ -1,6 +1,5 @@
 import json
 import os
-from typing import cast
 
 
 class PositionsFileLoader:
@@ -18,9 +17,9 @@ class PositionsFileLoader:
             raise PositionsFileLoaderException("File does not exist")
 
         with open(path_to_positions_file, "r") as f:
-            positions_data = json.load(f)
+            positions_data: list[dict[str, str]] = json.load(f)
 
-        return cast(list[dict[str, str]], positions_data)
+        return positions_data
 
 
 class PositionsFileLoaderException(Exception):

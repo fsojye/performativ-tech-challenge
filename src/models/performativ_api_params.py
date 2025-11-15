@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from typing import Any, Self
 
-from entities.metrics import BaseMetric, FinancialMetrics, PositionMetric
+from entities.metrics import BaseMetric, FinancialMetrics
 
 
 @dataclass
@@ -30,10 +29,10 @@ class PostSubmitPayload:
     def from_metric(cls, metrics: FinancialMetrics) -> PostSubmitPayload:
         return cls(
             positions={
-                position_id: PositionPayload.from_metric(position_metric)
+                position_id: BasePayload.from_metric(position_metric)  # type: ignore
                 for position_id, position_metric in metrics.positions.items()
             },
-            basket=BasketPayload.from_metric(metrics.basket),
+            basket=BasketPayload.from_metric(metrics.basket),  # type: ignore
             dates=metrics.dates.strftime("%Y-%m-%d").tolist(),
         )
 
@@ -66,5 +65,5 @@ class PositionPayload(BasePayload):
 
 
 @dataclass
-class BasketPayload(PositionPayload):
+class BasketPayload(BasePayload):
     pass

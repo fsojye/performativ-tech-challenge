@@ -1,10 +1,10 @@
-import builtins
-from numpy import dtype, nan, ndarray
-import numpy
+from numpy import nan
+from numpy.typing import NDArray
 from pandas import DataFrame, DatetimeIndex, Timedelta, Timestamp, to_datetime
+
+from entities.metrics import PositionMetric
 from entities.position import PositionMetricFields
 from models.positions_data import PositionDTO
-from entities.metrics import PositionMetric
 
 
 class PositionCalculator:
@@ -50,33 +50,35 @@ class PositionCalculator:
             value_start=position_df[PositionMetricFields.VALUE_START_TARGET],
         )
 
-    def _day_is_pre_close(self, close_date: Timestamp):
+    def _day_is_pre_close(self, close_date: Timestamp) -> NDArray:
         close_bound = close_date or (
             to_datetime(self._date_index[-1].date()) + Timedelta(days=1)
         )
-        return self._date_index < close_bound
+        return self._date_index < close_bound  # type: ignore
 
-    def _day_is_within_open(self, open_date: Timestamp, close_date: Timestamp):
-        return (self._date_index >= open_date) & self._day_is_pre_close(close_date)
+    def _day_is_within_open(
+        self, open_date: Timestamp, close_date: Timestamp
+    ) -> NDArray:
+        return (self._date_index >= open_date) & self._day_is_pre_close(close_date)  # type: ignore
 
-    def _day_is_close(self, close_date: Timestamp):
-        return self._date_index == close_date
+    def _day_is_close(self, close_date: Timestamp) -> NDArray:
+        return self._date_index == close_date  # type: ignore
 
-    def _day_is_open(self, open_date: Timestamp):
-        return self._date_index == open_date
+    def _day_is_open(self, open_date: Timestamp) -> NDArray:
+        return self._date_index == open_date  # type: ignore
 
-    def _day_is_pre_open(self, open_date: Timestamp):
-        return self._date_index < open_date
+    def _day_is_pre_open(self, open_date: Timestamp) -> NDArray:
+        return self._date_index < open_date  # type: ignore
 
     def _day_is_within_open_or_is_close(
         self, open_date: Timestamp, close_date: Timestamp
-    ):
-        return self._day_is_within_open(open_date, close_date) | self._day_is_close(
+    ) -> NDArray:
+        return self._day_is_within_open(open_date, close_date) | self._day_is_close(  # type: ignore
             close_date
         )
 
-    def _day_is_not_open_but_is_start(self, open_date: Timestamp):
-        return (self._date_index != open_date) & (
+    def _day_is_not_open_but_is_start(self, open_date: Timestamp) -> NDArray:
+        return (self._date_index != open_date) & (  # type: ignore
             self._date_index == self._date_index[0].date()
         )
 

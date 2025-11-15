@@ -6,14 +6,16 @@ from controllers.main_controller import MainController
 
 def main() -> str:
     parser = ArgumentParser(
-        description="Calculate simplified financial metrics for a set of positions over a specified time window."
+        description="Calculate simplified financial metrics for a set of positions \
+            over a specified time window."
     )
 
     parser.add_argument(
         "--positions-file",
         type=str,
         required=True,
-        help="Path to the JSON file containing position data (e.g., 'tech-challenge-2025-positions.json').",
+        help="Path to the JSON file containing position data (e.g., \
+            'tech-challenge-2025-positions.json').",
     )
 
     parser.add_argument(

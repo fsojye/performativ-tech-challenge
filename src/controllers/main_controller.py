@@ -1,17 +1,12 @@
-from dataclasses import asdict
-from datetime import date
 import json
-from typing import Optional
+from datetime import date
 
-from services.financial_metrics_calculator import FinancialMetricsCalculator
-from services.positions_file_loader import PositionsFileLoader
-from repositories.performativ_api_repo import PerformativApiRepo
 from models.performativ_api_params import (
-    BasketPayload,
-    PositionPayload,
     PostSubmitPayload,
 )
-from entities.metrics import BasketMetric, FinancialMetrics, PositionMetric
+from repositories.performativ_api_repo import PerformativApiRepo
+from services.financial_metrics_calculator import FinancialMetricsCalculator
+from services.positions_file_loader import PositionsFileLoader
 
 
 class MainController:

@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Iterator, Optional
+from typing import Iterator
 
 from pandas import (
     DataFrame,
@@ -8,12 +8,12 @@ from pandas import (
     to_datetime,
 )
 
-from services.performativ_resource_loader import PerformativResourceLoader
+from entities.metrics import FinancialMetrics, PositionMetric
 from models.performativ_resource import PerformativResource
 from models.positions_data import PositionsData
-from services.position_calculator import PositionCalculator
 from services.basket_calculator import BasketCalculator
-from entities.metrics import FinancialMetrics, PositionMetric
+from services.performativ_resource_loader import PerformativResourceLoader
+from services.position_calculator import PositionCalculator
 
 
 class FinancialMetricsCalculator:
@@ -24,7 +24,9 @@ class FinancialMetricsCalculator:
         position_calculator: PositionCalculator | None = None,
         basket_calculator: BasketCalculator | None = None,
     ):
-        self._positions_data = PositionsData(**{"positions": positions_data})
+        self._positions_data = PositionsData.model_validate(
+            {"positions": positions_data}
+        )
         self._performativ_resource_loader = (
             performativ_resource_loader
             or PerformativResourceLoader(self._positions_data)

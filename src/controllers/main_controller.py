@@ -31,8 +31,12 @@ class MainController:
             raise MainControllerException(str(e)) from e
 
     def _load_properties(
-        self, path_to_positions_file, target_currency, start_date_str, end_date_str
-    ):
+        self,
+        path_to_positions_file: str,
+        target_currency: str,
+        start_date_str: str,
+        end_date_str: str,
+    ) -> None:
         try:
             self.start_date = self._try_parse_datestr(start_date_str)
             self.end_date = self._try_parse_datestr(end_date_str)

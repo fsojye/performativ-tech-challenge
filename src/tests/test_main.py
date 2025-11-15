@@ -2,8 +2,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from main import Main, MainException
-
 
 class TestMain:
     @pytest.fixture(autouse=True, scope="function")

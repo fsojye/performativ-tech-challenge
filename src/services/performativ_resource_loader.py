@@ -1,5 +1,6 @@
 from datetime import date
 
+from numpy import ndarray
 from pandas import DataFrame
 from repositories.performativ_api_repo import PerformativApiRepo
 from models.performativ_resource import PerformativResource
@@ -30,7 +31,9 @@ class PerformativResourceLoader:
             prices=self._get_prices_by_dates(instrument_ids, start_date, end_date),
         )
 
-    def _get_unique_fx_pairs(self, positions_df: DataFrame, target_currency: str):
+    def _get_unique_fx_pairs(
+        self, positions_df: DataFrame, target_currency: str
+    ) -> ndarray:
         return (
             positions_df[positions_df["instrument_currency"] != target_currency][
                 "instrument_currency"
@@ -38,12 +41,12 @@ class PerformativResourceLoader:
             + target_currency
         ).unique()
 
-    def _get_unique_instrument_ids(self, positions_df: DataFrame):
+    def _get_unique_instrument_ids(self, positions_df: DataFrame) -> ndarray:
         return positions_df["instrument_id"].unique()
 
     def _get_fx_rates_by_dates(
         self, fx_pairs: list[str], start_date: str, end_date: str
-    ):
+    ) -> dict:
         return self._performativ_api_repo.get_fx_rates_by_dates(
             params=GetFxRatesParams(
                 pairs=",".join(fx_pairs), start_date=start_date, end_date=end_date

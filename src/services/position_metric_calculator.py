@@ -1,6 +1,6 @@
 from datetime import date
 from numpy import nan
-from pandas import DataFrame, Timedelta, date_range, to_datetime
+from pandas import DataFrame, Timedelta, Timestamp, date_range, to_datetime
 from entities.position import PositionDayValuationFields
 from models.positions_data import PositionDTO
 
@@ -10,125 +10,155 @@ class PositionMetricCalculator:
     prices: DataFrame
 
     def calculate_metrics(
-        self,
-        position: PositionDTO,
-        start_date: date,
-        end_date: date,
-    ):
-        date_series = date_range(start_date, end_date)
-
+        self, position: PositionDTO, start_date: date, end_date: date
+    ) -> DataFrame:
+        self._date_series_index = date_range(start_date, end_date)
         open_date = to_datetime(position.open_date)
         close_date = to_datetime(position.close_date)
+        position_df = DataFrame(index=self._date_series_index)
 
-        close_bound = close_date or (to_datetime(end_date) + Timedelta(days=1))
-        after_open_mask = date_series >= open_date
-        pre_close_mask = date_series < close_bound
-        is_open_mask = after_open_mask & pre_close_mask
-        is_close_day_mask = date_series == close_date
-        is_open_day_mask = date_series == open_date
-        pre_open_mask = date_series < open_date
-        is_active_rpp_mask = is_open_mask | is_close_day_mask
+        self._price_local_calculate(position_df, open_date)
+        self._price_target_calculate(position_df)
+        self._open_price_target_calculate(position_df, position.open_price)
+        self._close_price_target_calculate(position_df, position.close_price)
+        self._is_open_calculate(position_df, open_date, close_date)
+        self._quantity_calculate(position_df, position.quantity)
+        self._value_local_calculate(position_df)
+        self._value_target_calculate(position_df)
+        self._open_value_target_calculate(position_df, position.quantity, open_date)
+        self._close_value_target_calculate(position_df, position.quantity, close_date)
+        self._value_end_target_calculate(position_df, close_date)
+        self._value_start_target_calculate(
+            position_df, open_date, self._date_series_index[0].date()
+        )
+        self._return_per_period_calculate(position_df, open_date, close_date)
+        self._return_per_period_percentage_calculate(position_df)
 
-        position_df = (
-            DataFrame(index=date_series)
-            .assign(
-                **{
-                    PositionDayValuationFields.PRICE_LOCAL: self.prices["price"].mask(
-                        pre_open_mask, 0.0
-                    )
-                },
-                **{
-                    PositionDayValuationFields.OPEN_PRICE_TARGET: position.open_price
-                    * self.fx_rates["rate"]
-                },
-                **{
-                    PositionDayValuationFields.CLOSE_PRICE_TARGET: (
-                        position.close_price
-                        if position.close_price is not None
-                        else nan
-                    )
-                    * self.fx_rates["rate"]
-                },
-                **{
-                    PositionDayValuationFields.QUANTITY: is_open_mask.astype(float)
-                    * position.quantity
-                },
-                **{PositionDayValuationFields.IS_OPEN: is_open_mask.astype(int)},
+        return position_df
+
+    def _day_is_pre_close(self, close_date: Timestamp):
+        close_bound = close_date or (
+            to_datetime(self._date_series_index[-1].date()) + Timedelta(days=1)
+        )
+        return self._date_series_index < close_bound
+
+    def _day_is_within_open(self, open_date: Timestamp, close_date: Timestamp):
+        return (self._date_series_index >= open_date) & self._day_is_pre_close(
+            close_date
+        )
+
+    def _day_is_close(self, close_date: Timestamp):
+        return self._date_series_index == close_date
+
+    def _day_is_open(self, open_date: Timestamp):
+        return self._date_series_index == open_date
+
+    def _day_is_pre_open(self, open_date: Timestamp):
+        return self._date_series_index < open_date
+
+    def _day_is_within_open_or_is_close(
+        self, open_date: Timestamp, close_date: Timestamp
+    ):
+        return self._day_is_within_open(open_date, close_date) | self._day_is_close(
+            close_date
+        )
+
+    def _day_is_not_open_but_is_start(self, open_date: Timestamp, start_date: date):
+        return (self._date_series_index != open_date) & (
+            self._date_series_index == start_date
+        )
+
+    def _price_local_calculate(self, dataframe: DataFrame, open_date: Timestamp):
+        dataframe[PositionDayValuationFields.PRICE_LOCAL] = self.prices["price"].mask(
+            self._day_is_pre_open(open_date), 0.0
+        )
+
+    def _price_target_calculate(self, dataframe: DataFrame):
+        dataframe[PositionDayValuationFields.PRICE_TARGET] = (
+            dataframe[PositionDayValuationFields.PRICE_LOCAL] * self.fx_rates["rate"]
+        )
+
+    def _open_price_target_calculate(self, dataframe: DataFrame, open_price: float):
+        dataframe[PositionDayValuationFields.OPEN_PRICE_TARGET] = (
+            open_price * self.fx_rates["rate"]
+        )
+
+    def _close_price_target_calculate(self, dataframe: DataFrame, close_price: float):
+        dataframe[PositionDayValuationFields.CLOSE_PRICE_TARGET] = (
+            close_price if close_price is not None else nan
+        ) * self.fx_rates["rate"]
+
+    def _is_open_calculate(
+        self, dataframe: DataFrame, open_date: Timestamp, close_date: Timestamp
+    ):
+        dataframe[PositionDayValuationFields.IS_OPEN] = self._day_is_within_open(
+            open_date, close_date
+        ).astype(float)
+
+    def _quantity_calculate(self, dataframe: DataFrame, quantity: float):
+        dataframe[PositionDayValuationFields.QUANTITY] = (
+            dataframe[PositionDayValuationFields.IS_OPEN] * quantity
+        )
+
+    def _value_local_calculate(self, dataframe: DataFrame):
+        dataframe[PositionDayValuationFields.VALUE_LOCAL] = (
+            dataframe[PositionDayValuationFields.PRICE_LOCAL]
+            * dataframe[PositionDayValuationFields.QUANTITY]
+        )
+
+    def _value_target_calculate(self, dataframe: DataFrame):
+        dataframe[PositionDayValuationFields.VALUE_TARGET] = (
+            dataframe[PositionDayValuationFields.VALUE_LOCAL] * self.fx_rates["rate"]
+        )
+
+    def _open_value_target_calculate(
+        self, dataframe: DataFrame, quantity: float, open_date: Timestamp
+    ):
+        dataframe[PositionDayValuationFields.OPEN_VALUE_TARGET] = (
+            dataframe[PositionDayValuationFields.OPEN_PRICE_TARGET] * quantity
+        ).mask(self._day_is_pre_open(open_date), 0.0)
+
+    def _close_value_target_calculate(
+        self, dataframe: DataFrame, quantity: float, close_date: Timestamp
+    ):
+        dataframe[PositionDayValuationFields.CLOSE_VALUE_TARGET] = (
+            dataframe[PositionDayValuationFields.CLOSE_PRICE_TARGET] * quantity
+        ).mask(self._day_is_pre_close(close_date), 0.0)
+
+    def _value_end_target_calculate(self, dataframe: DataFrame, close_date: Timestamp):
+        dataframe[PositionDayValuationFields.VALUE_END_TARGET] = dataframe[
+            PositionDayValuationFields.VALUE_TARGET
+        ].mask(
+            self._day_is_close(close_date),
+            dataframe[PositionDayValuationFields.CLOSE_PRICE_TARGET],
+        )
+
+    def _value_start_target_calculate(
+        self, dataframe: DataFrame, open_date: Timestamp, start_date: date
+    ):
+        dataframe[PositionDayValuationFields.VALUE_START_TARGET] = (
+            dataframe[PositionDayValuationFields.VALUE_TARGET]
+            .shift(1, fill_value=0.0)
+            .mask(
+                self._day_is_not_open_but_is_start(open_date, start_date),
+                dataframe[PositionDayValuationFields.VALUE_TARGET],
             )
-            .assign(
-                **{
-                    PositionDayValuationFields.PRICE_TARGET: lambda df: df[
-                        PositionDayValuationFields.PRICE_LOCAL
-                    ]
-                    * self.fx_rates["rate"]
-                },
-                **{
-                    PositionDayValuationFields.VALUE_LOCAL: lambda df: df[
-                        PositionDayValuationFields.PRICE_LOCAL
-                    ]
-                    * df[PositionDayValuationFields.QUANTITY]
-                },
-            )
-            .assign(
-                **{
-                    PositionDayValuationFields.VALUE_TARGET: lambda df: df[
-                        PositionDayValuationFields.VALUE_LOCAL
-                    ]
-                    * self.fx_rates["rate"]
-                },
-                **{
-                    PositionDayValuationFields.OPEN_VALUE_TARGET: lambda df: (
-                        df[PositionDayValuationFields.OPEN_PRICE_TARGET]
-                        * position.quantity
-                    ).mask(pre_open_mask, 0.0)
-                },
-                **{
-                    PositionDayValuationFields.CLOSE_VALUE_TARGET: lambda df: (
-                        df[PositionDayValuationFields.CLOSE_PRICE_TARGET]
-                        * position.quantity
-                    ).mask(pre_close_mask, 0.0)
-                },
-            )
-            .assign(
-                **{
-                    PositionDayValuationFields.VALUE_END_TARGET: lambda df: df[
-                        PositionDayValuationFields.VALUE_TARGET
-                    ].mask(
-                        is_close_day_mask,
-                        df[PositionDayValuationFields.CLOSE_VALUE_TARGET],
-                    )
-                },
-            )
-            .assign(
-                **{
-                    PositionDayValuationFields.VALUE_START_TARGET: lambda df: df[
-                        PositionDayValuationFields.VALUE_TARGET
-                    ]
-                    .shift(1, fill_value=0.0)
-                    .mask(
-                        (date_series != open_date) & (date_series == start_date),
-                        df[PositionDayValuationFields.VALUE_TARGET],
-                    )
-                    .mask(
-                        is_open_day_mask,
-                        df[PositionDayValuationFields.OPEN_VALUE_TARGET],
-                    )
-                }
-            )
-            .assign(
-                **{
-                    PositionDayValuationFields.RETURN_PER_PERIOD: lambda df: (
-                        df[PositionDayValuationFields.VALUE_END_TARGET]
-                        - df[PositionDayValuationFields.VALUE_START_TARGET]
-                    ).where(is_active_rpp_mask, 0.0)
-                },
-                **{
-                    PositionDayValuationFields.RETURN_PER_PERIOD_PERCENTAGE: lambda df: (
-                        df[PositionDayValuationFields.RETURN_PER_PERIOD]
-                        / df[PositionDayValuationFields.VALUE_START_TARGET]
-                    ).fillna(0.0)
-                },
+            .mask(
+                self._day_is_open(open_date),
+                dataframe[PositionDayValuationFields.OPEN_VALUE_TARGET],
             )
         )
 
-        return position_df
+    def _return_per_period_calculate(
+        self, dataframe: DataFrame, open_date: Timestamp, close_date: Timestamp
+    ):
+        dataframe[PositionDayValuationFields.RETURN_PER_PERIOD] = (
+            dataframe[PositionDayValuationFields.VALUE_END_TARGET]
+            - dataframe[PositionDayValuationFields.VALUE_START_TARGET]
+        ).where(self._day_is_within_open_or_is_close(open_date, close_date), 0.0)
+
+    def _return_per_period_percentage_calculate(self, dataframe: DataFrame):
+        dataframe[PositionDayValuationFields.RETURN_PER_PERIOD_PERCENTAGE] = (
+            dataframe[PositionDayValuationFields.RETURN_PER_PERIOD]
+            / dataframe[PositionDayValuationFields.VALUE_START_TARGET]
+        ).fillna(0.0)

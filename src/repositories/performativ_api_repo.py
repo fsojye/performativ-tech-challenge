@@ -1,4 +1,6 @@
 from dataclasses import asdict
+from typing import Optional
+import typing
 from requests import Session
 
 from repositories.enviroment_loader import config
@@ -6,24 +8,26 @@ from models.performativ_api_params import (
     BasePerformativApiParams,
     GetFxRatesParams,
     GetInstrumentPricesParams,
+    PostSubmitPayload,
 )
 
 
 class PerformativApiRepo:
-    def __init__(self, session: Session = Session()):
-        self.session = session
+    def __init__(self, session: Optional[Session] = None):
+        self.session = session or Session()
         self.url = config.PERFORMATIV_API_URL
-        self.headers = {
-            "x-api-key": config.PERFORMATIV_API_KEY,
-            "candidate_id": config.PERFORMATIV_CANDIDATE_ID,
-        }
+        self.session.headers.update(
+            {
+                "x-api-key": config.PERFORMATIV_API_KEY,
+                "candidate_id": config.PERFORMATIV_CANDIDATE_ID,
+            }
+        )
 
     def _get(self, endpoint: str, params: BasePerformativApiParams) -> dict[str, str]:
-        response = self.session.get(
-            url=f"{self.url}/{endpoint}", headers=self.headers, params=asdict(params)
-        )
+        response = self.session.get(url=f"{self.url}/{endpoint}", params=asdict(params))
         response.raise_for_status()
-        return response.json()
+        data: dict[str, str] = response.json()
+        return data
 
     def get_fx_rates_by_dates(self, params: GetFxRatesParams) -> dict[str, str]:
         return self._get("fx-rates", params)
@@ -32,3 +36,10 @@ class PerformativApiRepo:
         self, params: GetInstrumentPricesParams
     ) -> dict[str, str]:
         return self._get("prices", params)
+
+    def post_submit_financial_metrics(
+        self, payload: PostSubmitPayload
+    ) -> dict[str, str]:
+        endpoint = "submit"
+        response = self.session.post(url=f"{self.url}/{endpoint}", json=asdict(payload))
+        return response.json()

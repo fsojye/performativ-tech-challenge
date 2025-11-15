@@ -1,10 +1,9 @@
 from datetime import date
-from typing import Generator
+from typing import Iterator, Optional
 
 from pandas import (
     DataFrame,
     DatetimeIndex,
-    concat,
     date_range,
     to_datetime,
 )
@@ -12,79 +11,71 @@ from pandas import (
 from services.performativ_resource_loader import PerformativResourceLoader
 from models.performativ_resource import PerformativResource
 from models.positions_data import PositionsData
-from entities.position import PositionDayValuationFields
-from services.position_metric_calculator import PositionMetricCalculator
-from services.basket_aggregator import BasketAggregator
-from entities.metrics import BaseMetric, PositionMetric
+from services.position_calculator import PositionCalculator
+from services.basket_calculator import BasketCalculator
+from entities.metrics import FinancialMetrics, PositionMetric
 
 
 class FinancialMetricsCalculator:
     def __init__(
         self,
         positions_data: list[dict[str, str]],
-        performativ_resource_loader: PerformativResourceLoader = None,
-        position_metric_calculator: PositionMetricCalculator = None,
-        basket_aggregator: BasketAggregator = None,
+        performativ_resource_loader: PerformativResourceLoader | None = None,
+        position_calculator: PositionCalculator | None = None,
+        basket_calculator: BasketCalculator | None = None,
     ):
         self._positions_data = PositionsData(**{"positions": positions_data})
         self._performativ_resource_loader = (
             performativ_resource_loader
             or PerformativResourceLoader(self._positions_data)
         )
-        self._position_metric_calculator = (
-            position_metric_calculator or PositionMetricCalculator()
-        )
-        self._basket_aggregator = basket_aggregator or BasketAggregator()
+        self._position_calculator = position_calculator or PositionCalculator()
+        self._basket_calculator = basket_calculator or BasketCalculator()
 
-    def calculate_metrics(
+    def calculate(
         self,
         target_currency: str,
         start_date: date,
         end_date: date,
-    ) -> str:
+    ) -> FinancialMetrics:
         # set_option("display.max_rows", None)  # Show all rows
         # set_option("display.max_columns", None)  # Show all columns
         # set_option("display.width", None)  # Use the maximum display width
         # set_option("display.max_colwidth", None)
-        result = {}
-        result["positions"] = {}
-        position_dfs = []
-        for position_id, position_metric in self._calculate_position_metrics(
-            target_currency, start_date, end_date
-        ):
-            self._basket_aggregator.add_to_basket(position_metric)
+        positions = {}
+        date_index = date_range(start_date, end_date)
 
-        return (self._basket_aggregator.aggregate(),)
+        for position_id, position_metric in self._calculate_position_metrics(
+            target_currency, date_index
+        ):
+            positions[position_id] = position_metric
+            self._basket_calculator.add_to_basket(position_metric)
+
+        return FinancialMetrics(
+            positions=positions,
+            basket=self._basket_calculator.calculate(),
+            dates=date_index,
+        )
 
     def _calculate_position_metrics(
-        self, target_currency: str, start_date: date, end_date: date
-    ) -> Generator:
+        self, target_currency: str, date_index: DatetimeIndex
+    ) -> Iterator[tuple[int, PositionMetric]]:
+        start_date = date_index[0].date()
+        end_date = date_index[-1].date()
+
         resource_data = self._load_resource_data(target_currency, start_date, end_date)
-        date_series = date_range(start_date, end_date)
         for pos in self._positions_data.positions:
             fx_pair = f"{pos.instrument_currency}{target_currency}"
             fx_df = self._get_fx_pair_dataframe(
-                date_series, fx_pair, resource_data.fx_rates
+                date_index, fx_pair, resource_data.fx_rates
             )
             prices_df = self._get_instrument_prices_dataframe(
-                date_series, str(pos.instrument_id), resource_data.prices
+                date_index, str(pos.instrument_id), resource_data.prices
             )
 
-            self._position_metric_calculator.fx_rates = fx_df
-            self._position_metric_calculator.prices = prices_df
-            pos_metrics = self._position_metric_calculator.calculate_metrics(
-                pos, start_date, end_date
-            )
-
-            return PositionMetric(
-                Id=pos.id,
-                Metric=BaseMetric(
-                    IsOpen=pos_metrics[PositionDayValuationFields.IS_OPEN],
-                    Price=pos_metrics[PositionDayValuationFields.PRICE_LOCAL],
-                    Value=pos_metrics[PositionDayValuationFields.VALUE_TARGET],
-                    ReturnPerPeriod=pos_metrics[PositionDayValuationFields.RETURN_PER_PERIOD],
-                    ReturnPerPeriodPercentage=pos_metrics[PositionDayValuationFields.RETURN_PER_PERIOD_PERCENTAGE]
-                )
+            yield (
+                pos.id,
+                self._position_calculator.calculate(pos, date_index, fx_df, prices_df),
             )
 
     def _load_resource_data(

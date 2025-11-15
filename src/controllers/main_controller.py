@@ -1,8 +1,17 @@
+from dataclasses import asdict
 from datetime import date
+import json
 from typing import Optional
 
-from services.financial_metric_calculator import FinancialMetricsCalculator
+from services.financial_metrics_calculator import FinancialMetricsCalculator
 from services.positions_file_loader import PositionsFileLoader
+from repositories.performativ_api_repo import PerformativApiRepo
+from models.performativ_api_params import (
+    BasketPayload,
+    PositionPayload,
+    PostSubmitPayload,
+)
+from entities.metrics import BasketMetric, FinancialMetrics, PositionMetric
 
 
 class MainController:
@@ -12,17 +21,19 @@ class MainController:
         target_currency: str,
         start_date_str: str,
         end_date_str: str,
-        positions_file_loader: Optional[PositionsFileLoader] = None,
-        financial_metrics_calculator: Optional[FinancialMetricsCalculator] = None,
+        positions_file_loader: PositionsFileLoader | None = None,
+        financial_metrics_calculator: FinancialMetricsCalculator | None = None,
+        performativ_api_repo: PerformativApiRepo | None = None,
     ):
         self.positions_file_loader = positions_file_loader or PositionsFileLoader()
-        self._load_properties(
+        self._init_properties(
             path_to_positions_file, target_currency, start_date_str, end_date_str
         )
         self.financial_metrics_calculator = (
             financial_metrics_calculator
             or FinancialMetricsCalculator(self.positions_data)
         )
+        self.performativ_api_repo = performativ_api_repo or PerformativApiRepo()
 
     def run(self) -> str:
         try:
@@ -30,7 +41,7 @@ class MainController:
         except Exception as e:
             raise MainControllerException(str(e)) from e
 
-    def _load_properties(
+    def _init_properties(
         self,
         path_to_positions_file: str,
         target_currency: str,
@@ -54,8 +65,13 @@ class MainController:
             raise MainControllerException("Supplied date is invalid isoformat") from e
 
     def _run(self) -> str:
-        return self.financial_metrics_calculator.calculate_metrics(
+        financial_metrics = self.financial_metrics_calculator.calculate(
             self.target_currency, self.start_date, self.end_date
+        )
+        post_submit_payload = PostSubmitPayload.from_metric(financial_metrics)
+        print(post_submit_payload)
+        return json.dumps(
+            self.performativ_api_repo.post_submit_financial_metrics(post_submit_payload)
         )
 
 

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class PositionDayValuationFields(str, Enum):
+class PositionMetricFields(str, Enum):
     OPEN_PRICE_TARGET = "open_price_target"
     CLOSE_PRICE_TARGET = "close_price_target"
     PRICE_LOCAL = "price_local"

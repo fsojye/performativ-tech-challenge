@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from controllers.main_controller import MainController
 
 
-def main():
+def main() -> str:
     parser = ArgumentParser(
         description="Calculate simplified financial metrics for a set of positions over a specified time window."
     )

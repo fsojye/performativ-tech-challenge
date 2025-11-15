@@ -1,5 +1,6 @@
 mypy
 ruff
+types-requests
 
 pytest
 pytest-cov

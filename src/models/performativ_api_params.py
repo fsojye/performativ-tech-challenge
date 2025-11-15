@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+from typing import Any, Self
+
+from entities.metrics import BaseMetric, FinancialMetrics, PositionMetric
 
 
 @dataclass
@@ -23,14 +26,43 @@ class PostSubmitPayload:
     basket: BasketPayload
     dates: list[str]
 
+    @classmethod
+    def from_metric(cls, metrics: FinancialMetrics) -> PostSubmitPayload:
+        return cls(
+            positions={
+                position_id: PositionPayload.from_metric(position_metric)
+                for position_id, position_metric in metrics.positions.items()
+            },
+            basket=BasketPayload.from_metric(metrics.basket),
+            dates=metrics.dates.strftime("%Y-%m-%d").tolist(),
+        )
+
 
 @dataclass
-class PositionPayload:
+class BasePayload:
     IsOpen: list[float]
     Price: list[float]
     Value: list[float]
     ReturnPerPeriod: list[float]
     ReturnPerPeriodPercentage: list[float]
+
+    @classmethod
+    def from_metric(cls, metric: BaseMetric) -> BasePayload:
+        precision = 8
+        return cls(
+            IsOpen=metric.is_open.round(precision).tolist(),
+            Price=metric.price.round(precision).tolist(),
+            Value=metric.value.round(precision).tolist(),
+            ReturnPerPeriod=metric.return_per_period.round(precision).tolist(),
+            ReturnPerPeriodPercentage=metric.return_per_period_percentage.round(
+                precision
+            ).tolist(),
+        )
+
+
+@dataclass
+class PositionPayload(BasePayload):
+    pass
 
 
 @dataclass

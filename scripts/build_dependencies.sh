@@ -12,7 +12,7 @@ APP_DIR="src"
 
 if [ ! -d ".venv" ]; then
   echo "Virtual environment not found. Creating one with 'uv venv'..."
-  uv venv
+  uv venv --python python3.14
 fi
 
 if [[ "$ACTION" == "update" ]]; then

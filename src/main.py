@@ -1,11 +1,10 @@
-import sys
 from argparse import ArgumentParser
 
 from controllers.main_controller import MainController
 
 
-def main(arg_parser: ArgumentParser | None = None) -> str:
-    parser = arg_parser or ArgumentParser(
+def main(argv: list[str] | None = None) -> str:
+    parser = ArgumentParser(
         description="Calculate simplified financial metrics for a set of positions \
             over a specified time window."
     )
@@ -39,7 +38,7 @@ def main(arg_parser: ArgumentParser | None = None) -> str:
         default="2024-11-10",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     return MainController(
         args.positions_file, args.target_currency, args.start_date, args.end_date
@@ -47,10 +46,13 @@ def main(arg_parser: ArgumentParser | None = None) -> str:
 
 
 if __name__ == "__main__":
-    result = main()
-    print(result)
-    sys.exit()
-    # try:
-    # except Exception as e:
-    #     print(e)
-    #     sys.exit(1)
+    import sys
+
+    try:
+        result = main()
+        print(result)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    else:
+        sys.exit(0)

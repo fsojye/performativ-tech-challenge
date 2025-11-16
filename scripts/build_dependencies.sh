@@ -10,6 +10,11 @@ fi
 
 APP_DIR="src"
 
+if [ ! -d ".venv" ]; then
+  echo "Virtual environment not found. Creating one with 'uv venv'..."
+  uv venv
+fi
+
 if [[ "$ACTION" == "update" ]]; then
   echo "Updating application dependencies"
   uv pip compile $APP_DIR/requirements.in -o $APP_DIR/requirements.txt \

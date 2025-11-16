@@ -1,10 +1,8 @@
-from dataclasses import asdict
 import json
+from dataclasses import asdict
 from datetime import date
 
-from models.performativ_api_params import (
-    PostSubmitPayload,
-)
+from repositories.enviroment_loader import config
 from repositories.performativ_api_repo import PerformativApiRepo
 from services.financial_metrics_calculator import FinancialMetricsCalculator
 from services.positions_file_loader import PositionsFileLoader
@@ -64,7 +62,9 @@ class MainController:
         financial_metrics = self.financial_metrics_calculator.calculate(
             self.target_currency, self.start_date, self.end_date
         )
-        post_submit_payload = PostSubmitPayload.from_metric(financial_metrics)
+        post_submit_payload = financial_metrics.to_submit_api_payload(
+            config.VALUE_PRECISION
+        )
 
         result = json.dumps(
             self.performativ_api_repo.post_submit_financial_metrics(

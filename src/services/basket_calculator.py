@@ -1,7 +1,7 @@
 from pandas import Series, concat
 from pandas.core.groupby import DataFrameGroupBy
 
-from entities.metrics import BasketMetric, PositionMetric
+from entities.financial_metrics import BasketMetric, PositionMetric
 
 
 class BasketCalculator:

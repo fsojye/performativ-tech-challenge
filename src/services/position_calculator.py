@@ -2,8 +2,8 @@ from numpy import nan
 from numpy.typing import NDArray
 from pandas import DataFrame, DatetimeIndex, Timedelta, Timestamp, to_datetime
 
-from entities.metrics import PositionMetric
-from entities.position import PositionMetricFields
+from entities.financial_metrics import PositionMetric
+from models.position_metric_fields import PositionMetricFields
 from models.positions_data import PositionDTO
 
 

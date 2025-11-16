@@ -8,7 +8,7 @@ from pandas import (
     to_datetime,
 )
 
-from entities.metrics import FinancialMetrics, PositionMetric
+from entities.financial_metrics import FinancialMetrics, PositionMetric
 from models.performativ_resource import PerformativResource
 from models.positions_data import PositionsData
 from services.basket_calculator import BasketCalculator

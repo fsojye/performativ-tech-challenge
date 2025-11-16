@@ -66,9 +66,10 @@ class FinancialMetricsCalculator:
             fx_df = self._get_fx_pair_dataframe(date_index, fx_pair, resource_data.fx_rates)
             prices_df = self._get_instrument_prices_dataframe(date_index, str(pos.instrument_id), resource_data.prices)
 
+            self._position_calculator.load_calculation_requirements(pos, fx_df, prices_df)
             yield (
                 pos.id,
-                self._position_calculator.calculate(pos, date_index, fx_df, prices_df),
+                self._position_calculator.calculate(date_index),
             )
 
     def _load_resource_data(self, target_currency: str, start_date: date, end_date: date) -> PerformativResource:

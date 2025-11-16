@@ -10,7 +10,7 @@ fi
 
 if [[ "$ACTION" == "unit_test" ]]; then
   echo "Running unit tests"
-  pytest
+  ./venv/bin/pytest
 fi
 
 if [[ "$ACTION" == "integration_test" ]]; then

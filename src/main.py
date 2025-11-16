@@ -40,9 +40,7 @@ def main(argv: list[str] | None = None) -> str:
 
     args = parser.parse_args(argv)
 
-    return MainController(
-        args.positions_file, args.target_currency, args.start_date, args.end_date
-    ).run()
+    return MainController(args.positions_file, args.target_currency, args.start_date, args.end_date).run()
 
 
 if __name__ == "__main__":

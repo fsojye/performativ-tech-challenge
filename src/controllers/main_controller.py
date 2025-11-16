@@ -2,10 +2,11 @@ import json
 from dataclasses import asdict
 from datetime import date
 
+from models.positions_data import PositionsData
 from repositories.enviroment_loader import config
 from repositories.performativ_api_repo import PerformativApiRepo
+from repositories.positions_data_repo import PositionsDataRepo
 from services.financial_metrics_calculator import FinancialMetricsCalculator
-from services.positions_file_loader import PositionsFileLoader
 
 
 class MainController:
@@ -15,17 +16,18 @@ class MainController:
         target_currency: str,
         start_date_str: str,
         end_date_str: str,
-        positions_file_loader: PositionsFileLoader | None = None,
+        positions_data_repo: PositionsDataRepo | None = None,
         financial_metrics_calculator: FinancialMetricsCalculator | None = None,
         performativ_api_repo: PerformativApiRepo | None = None,
     ):
-        self.positions_file_loader = positions_file_loader or PositionsFileLoader()
-        self._init_properties(
-            path_to_positions_file, target_currency, start_date_str, end_date_str
-        )
-        self.financial_metrics_calculator = (
-            financial_metrics_calculator
-            or FinancialMetricsCalculator(self.positions_data)
+        self._positions_data_repo = positions_data_repo or PositionsDataRepo(path_to_positions_file)
+        self.start_date = self._try_parse_datestr(start_date_str)
+        self.end_date = self._try_parse_datestr(end_date_str)
+        self.positions_data = self._get_positions_data()
+        self.target_currency = target_currency
+
+        self.financial_metrics_calculator = financial_metrics_calculator or FinancialMetricsCalculator(
+            self.positions_data
         )
         self.performativ_api_repo = performativ_api_repo or PerformativApiRepo()
 
@@ -35,41 +37,26 @@ class MainController:
         except Exception as e:
             raise MainControllerException(str(e)) from e
 
-    def _init_properties(
-        self,
-        path_to_positions_file: str,
-        target_currency: str,
-        start_date_str: str,
-        end_date_str: str,
-    ) -> None:
-        try:
-            self.start_date = self._try_parse_datestr(start_date_str)
-            self.end_date = self._try_parse_datestr(end_date_str)
-            self.target_currency = target_currency
-            self.positions_data = self.positions_file_loader.load(
-                path_to_positions_file
-            )
-        except Exception as e:
-            raise MainControllerException(str(e)) from e
-
     def _try_parse_datestr(self, date_str: str) -> date:
         try:
             return date.fromisoformat(date_str)
         except Exception as e:
             raise MainControllerException("Supplied date is invalid isoformat") from e
 
+    def _get_positions_data(self) -> PositionsData:
+        try:
+            return self._positions_data_repo.get()
+        except Exception as e:
+            raise MainControllerException(str(e)) from e
+
     def _run(self) -> str:
         financial_metrics = self.financial_metrics_calculator.calculate(
             self.target_currency, self.start_date, self.end_date
         )
-        post_submit_payload = financial_metrics.to_submit_api_payload(
-            config.VALUE_PRECISION
-        )
+        post_submit_payload = financial_metrics.to_submit_api_payload(config.VALUE_PRECISION)
 
         result = json.dumps(
-            self.performativ_api_repo.post_submit_financial_metrics(
-                post_submit_payload
-            ),
+            self.performativ_api_repo.post_submit_financial_metrics(post_submit_payload),
             indent=4,
         )
 

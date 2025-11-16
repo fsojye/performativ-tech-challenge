@@ -42,12 +42,8 @@ class BaseMetric:
             IsOpen=self._truncate_fields(precision, self.is_open).tolist(),
             Price=self._truncate_fields(precision, self.price).tolist(),
             Value=self._truncate_fields(precision, self.value).tolist(),
-            ReturnPerPeriod=self._truncate_fields(
-                precision, self.return_per_period
-            ).tolist(),
-            ReturnPerPeriodPercentage=self._truncate_fields(
-                precision, self.return_per_period_percentage
-            ).tolist(),
+            ReturnPerPeriod=self._truncate_fields(precision, self.return_per_period).tolist(),
+            ReturnPerPeriodPercentage=self._truncate_fields(precision, self.return_per_period_percentage).tolist(),
         )
 
     def _truncate_fields(self, precision: int, value: Series[float]) -> Series[float]:

@@ -39,7 +39,6 @@ performativ-tech-challenge/
 │   │   └── financial_metrics.py         # Financial metrics data classes
 │   └── .env                             # Environment variables
 ├── pyproject.toml                       # Project configuration
-├── tech-challenge-2025-positions.json   # Sample positions data
 └── README.md                            # This file
 ```
 

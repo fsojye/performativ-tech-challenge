@@ -1,20 +1,21 @@
-name: Build App
+name: Build app
 
 on:
   push:
     branches: [ main ]
-  pull_request:
+  
+  workflow_dispatch:
 
 jobs:
-  build:
+  run_script_job:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Make script executable
+      - name: Make Script Executable
         run: chmod -R +x ./scripts
 
-      - name: Run build script
+      - name: Execute Build Script
         run: ./scripts/build_app.sh

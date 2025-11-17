@@ -1,5 +1,4 @@
 import json
-from dataclasses import asdict
 from datetime import date
 
 from models.positions_data import PositionsData
@@ -54,13 +53,10 @@ class MainController:
             self.target_currency, self.start_date, self.end_date
         )
         post_submit_payload = financial_metrics.to_submit_api_payload(config.VALUE_PRECISION)
-
         result = json.dumps(
             self.performativ_api_repo.post_submit_financial_metrics(post_submit_payload),
             indent=4,
         )
-
-        print(json.dumps(asdict(post_submit_payload), indent=4))
         return result
 
 

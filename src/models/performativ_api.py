@@ -21,15 +21,13 @@ class GetInstrumentPricesParams(BasePerformativApiParams):
     instrument_id: str
 
 
-@dataclass
-class PostSubmitPayload:
+class PostSubmitPayload(BaseModel):
     positions: dict[str, PositionPayload]
     basket: BasketPayload | None
     dates: list[str]
 
 
-@dataclass
-class BasePayload:
+class BasePayload(BaseModel):
     IsOpen: list[float]
     Price: list[float]
     Value: list[float]
@@ -37,12 +35,10 @@ class BasePayload:
     ReturnPerPeriodPercentage: list[float]
 
 
-@dataclass
 class PositionPayload(BasePayload):
     pass
 
 
-@dataclass
 class BasketPayload(BasePayload):
     pass
 

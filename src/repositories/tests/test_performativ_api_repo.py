@@ -79,7 +79,7 @@ class TestPerformativApiRepo:
 
         payload = PostSubmitPayload(
             positions={},
-            basket=Mock(),
+            basket=None,
             dates=["2023-01-01", "2023-01-02"],
         )
 

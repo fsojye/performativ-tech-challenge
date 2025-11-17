@@ -1,6 +1,4 @@
-import json
 from dataclasses import asdict
-from decimal import Decimal
 
 from requests import Session
 
@@ -23,7 +21,6 @@ class PerformativApiRepo:
             {
                 "x-api-key": config.PERFORMATIV_API_KEY,
                 "candidate_id": config.PERFORMATIV_CANDIDATE_ID,
-                "Content-Type": "application/json",
             }
         )
 
@@ -51,20 +48,11 @@ class PerformativApiRepo:
     def post_submit_financial_metrics(self, payload: PostSubmitPayload) -> dict[str, str]:
         try:
             endpoint = "submit"
-            response = self.session.post(
-                url=f"{self.url}/{endpoint}", data=json.dumps(asdict(payload), cls=DecimalEncoder)
-            )
+            response = self.session.post(url=f"{self.url}/{endpoint}", json=payload.model_dump())
             response.raise_for_status()
             return response.json()  # type: ignore
         except Exception as ex:
             raise PerformativApiRepoException("Failed to post submit data") from ex
-
-
-class DecimalEncoder(json.JSONEncoder):
-    def default(self, obj):  # type: ignore
-        if isinstance(obj, Decimal):
-            return str(obj)
-        return super().default(obj)
 
 
 class PerformativApiRepoException(Exception):

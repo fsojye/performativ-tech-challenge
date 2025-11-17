@@ -57,6 +57,7 @@ class MainController:
             self.performativ_api_repo.post_submit_financial_metrics(post_submit_payload),
             indent=4,
         )
+        print(post_submit_payload.model_dump_json(indent=4))
         return result
 
 

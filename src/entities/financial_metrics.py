@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
+from numpy import trunc
 from pandas import DatetimeIndex, Series
 
 from models.performativ_api import (
@@ -45,7 +46,7 @@ class BaseMetric:
         }
 
     def _truncate_fields(self, precision: int, value: Series[Decimal]) -> Series[float]:
-        return value.astype(float).round(precision)
+        return trunc(value.astype(float) * 10**precision) / 10**precision
 
 
 @dataclass

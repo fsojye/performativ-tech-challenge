@@ -1,15 +1,18 @@
+from decimal import Decimal
+
 from pandas import Series, concat
 from pandas.core.groupby import DataFrameGroupBy
 
 from entities.financial_metrics import BasketMetric, PositionMetric
+from models.decimals import ONE, ZERO
 
 
 class BasketCalculator:
     def __init__(self) -> None:
-        self.is_open_series: list[Series[float]] = []
-        self.value_series: list[Series[float]] = []
-        self.value_start_series: list[Series[float]] = []
-        self.return_per_period_series: list[Series[float]] = []
+        self.is_open_series: list[Series[Decimal]] = []
+        self.value_series: list[Series[Decimal]] = []
+        self.value_start_series: list[Series[Decimal]] = []
+        self.return_per_period_series: list[Series[Decimal]] = []
 
     def add_to_basket(self, position_metric: PositionMetric) -> None:
         self.is_open_series.append(position_metric.is_open)
@@ -32,22 +35,27 @@ class BasketCalculator:
             ),
         )
 
-    def _is_open_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[float]:
+    def _is_open_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[Decimal]:
         return basket_aggregate.max()
 
-    def _price_local_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[float]:
-        return basket_aggregate.all() * 0.0
+    def _price_local_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[Decimal]:
+        return basket_aggregate.all() * ZERO
 
-    def _value_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[float]:
+    def _value_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[Decimal]:
         return basket_aggregate.sum()
 
-    def _return_per_period_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[float]:
+    def _return_per_period_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[Decimal]:
         return basket_aggregate.sum()
 
     def _return_per_period_percentage_calculate(
         self,
         basket_aggregate: DataFrameGroupBy,
         value_start_aggregate: DataFrameGroupBy,
-    ) -> Series[float]:
+    ) -> Series[Decimal]:
         value_start_aggregate_sum = value_start_aggregate.sum()
-        return (basket_aggregate.sum() / value_start_aggregate_sum).mask(value_start_aggregate_sum == 0, 0.0)
+        return_per_period_aggregate_sum = basket_aggregate.sum()
+
+        rpp_percentage_mean = return_per_period_aggregate_sum.where(
+            value_start_aggregate_sum != ZERO, ZERO
+        ) / value_start_aggregate_sum.replace(ZERO, ONE)
+        return rpp_percentage_mean.mask(value_start_aggregate_sum == ZERO, ZERO)

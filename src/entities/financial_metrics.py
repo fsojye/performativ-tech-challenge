@@ -1,10 +1,10 @@
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 from typing import cast
 
-from numpy import trunc
-from pandas import DatetimeIndex, Series
+from pandas import DatetimeIndex, Series, isna
 
-from models.performativ_api_params import (
+from models.performativ_api import (
     BasePayload,
     BasketPayload,
     PositionPayload,
@@ -46,8 +46,16 @@ class BaseMetric:
             ReturnPerPeriodPercentage=self._truncate_fields(precision, self.return_per_period_percentage).tolist(),
         )
 
-    def _truncate_fields(self, precision: int, value: Series[float]) -> Series[float]:
-        return trunc(value * 10**precision) / 10**precision
+    def _truncate_fields(self, precision: int, value: Series) -> Series:
+        decimal_precision = Decimal("1e-{}".format(precision))
+
+        def safe_quantize(x: Decimal) -> Decimal | None:
+            if isna(x) or x is None:
+                return None
+
+            return x.quantize(decimal_precision, rounding=ROUND_HALF_UP)
+
+        return value.apply(safe_quantize)
 
 
 @dataclass

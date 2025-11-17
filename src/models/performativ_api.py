@@ -1,4 +1,8 @@
 from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
+
+from pydantic import BaseModel
 
 
 @dataclass
@@ -20,7 +24,7 @@ class GetInstrumentPricesParams(BasePerformativApiParams):
 @dataclass
 class PostSubmitPayload:
     positions: dict[str, PositionPayload]
-    basket: BasketPayload
+    basket: BasketPayload | None
     dates: list[str]
 
 
@@ -41,3 +45,23 @@ class PositionPayload(BasePayload):
 @dataclass
 class BasketPayload(BasePayload):
     pass
+
+
+class BaseData(BaseModel):
+    date: date
+
+
+class FxRateData(BaseData):
+    rate: Decimal
+
+
+class PriceData(BaseData):
+    price: Decimal
+
+
+class FxRatesData(BaseModel):
+    items: dict[str, list[FxRateData]]
+
+
+class PricesData(BaseModel):
+    items: dict[str, list[PriceData]]

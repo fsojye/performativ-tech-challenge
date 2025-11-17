@@ -31,16 +31,7 @@ class FinancialMetricsCalculator:
         self._position_calculator = position_calculator or PositionCalculator()
         self._basket_calculator = basket_calculator or BasketCalculator()
 
-    def calculate(
-        self,
-        target_currency: str,
-        start_date: date,
-        end_date: date,
-    ) -> FinancialMetrics:
-        # set_option("display.max_rows", None)  # Show all rows
-        # set_option("display.max_columns", None)  # Show all columns
-        # set_option("display.width", None)  # Use the maximum display width
-        # set_option("display.max_colwidth", None)
+    def calculate(self, target_currency: str, start_date: date, end_date: date) -> FinancialMetrics:
         positions = {}
         date_index = date_range(start_date, end_date)
 
@@ -76,10 +67,7 @@ class FinancialMetricsCalculator:
         return self._performativ_resource_loader.load_resources(target_currency, start_date, end_date)
 
     def _get_fx_pair_dataframe(
-        self,
-        date_series: DatetimeIndex,
-        fx_pair: str,
-        fx_rates_data: dict[str, dict[str, str]],
+        self, date_series: DatetimeIndex, fx_pair: str, fx_rates_data: dict[str, dict[str, str]]
     ) -> DataFrame:
         fx_df = DataFrame(fx_rates_data.get(fx_pair, []), index=date_series)
         fx_df = fx_df.assign(

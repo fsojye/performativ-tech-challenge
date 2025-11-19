@@ -1,5 +1,5 @@
 from datetime import date
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -66,8 +66,8 @@ class TestPerformativResourceLoader:
         self,
     ):
         mock_response = {"test": "data"}
-        self.mock_performativ_api_repo.get_fx_rates_by_dates.return_value = mock_response
-        self.mock_performativ_api_repo.get_instruments_prices_by_dates.return_value = mock_response
+        self.mock_performativ_api_repo.get_fx_rates_by_dates = AsyncMock(return_value=mock_response)
+        self.mock_performativ_api_repo.get_instruments_prices_by_dates = AsyncMock(return_value=mock_response)
         instrument_ids = set(map(lambda pos: pos.instrument_id, self.test_positions_data.positions))
 
         actual = self.service.load_resources(

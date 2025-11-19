@@ -1,6 +1,5 @@
 from asyncio import gather, run
 from datetime import date
-from typing import Awaitable
 
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -20,7 +19,7 @@ class PerformativResourceLoader:
         self._positions_data = positions_data
         self._performativ_api_repo = performativ_api_repo or PerformativApiRepo()
 
-    def load_resources(self, target_currency: str, start_date: date, end_date: date):
+    def load_resources(self, target_currency: str, start_date: date, end_date: date) -> PerformativResource:
         return run(self._load_resources(target_currency, start_date, end_date))
 
     async def _load_resources(self, target_currency: str, start_date: date, end_date: date) -> PerformativResource:
@@ -46,14 +45,12 @@ class PerformativResourceLoader:
     def _get_unique_instrument_ids(self, positions_df: DataFrame) -> NDArray:
         return positions_df["instrument_id"].unique()  # type: ignore
 
-    async def _get_fx_rates_by_dates(self, fx_pairs: NDArray, start_date: str, end_date: str) -> Awaitable[FxRatesData]:
+    async def _get_fx_rates_by_dates(self, fx_pairs: NDArray, start_date: str, end_date: str) -> FxRatesData:
         return await self._performativ_api_repo.get_fx_rates_by_dates(
             params=GetFxRatesParams(pairs=",".join(fx_pairs), start_date=start_date, end_date=end_date)
         )
 
-    async def _get_prices_by_dates(
-        self, instrument_ids: NDArray, start_date: str, end_date: str
-    ) -> Awaitable[PricesData]:
+    async def _get_prices_by_dates(self, instrument_ids: NDArray, start_date: str, end_date: str) -> PricesData:
         return await self._performativ_api_repo.get_instruments_prices_by_dates(
             params=[
                 GetInstrumentPricesParams(instrument_id=instrument_id, start_date=start_date, end_date=end_date)

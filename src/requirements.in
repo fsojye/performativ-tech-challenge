@@ -4,6 +4,7 @@ types-requests
 
 pytest
 pytest-cov
+pytest-asyncio
 
 dotenv
 httpx

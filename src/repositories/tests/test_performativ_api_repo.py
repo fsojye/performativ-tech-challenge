@@ -67,7 +67,7 @@ class TestPerformativApiRepo:
             await self.repo.get_instruments_prices_by_dates(self.test_get_prices_params)
 
         assert "Failed to get prices data" in str(ex.value)
-        self.repo.client.get.call_count == len(self.test_get_prices_params)
+        assert self.repo.client.get.call_count == len(self.test_get_prices_params)
 
     @pytest.mark.asyncio
     async def test_get_instrument_prices_by_dates_when_request_succeeded_should_return_data(
@@ -81,7 +81,7 @@ class TestPerformativApiRepo:
         actual = await self.repo.get_instruments_prices_by_dates(self.test_get_prices_params)
 
         assert actual.model_dump() == expected.model_dump()
-        self.repo.client.get.call_count == len(self.test_get_prices_params)
+        assert self.repo.client.get.call_count == len(self.test_get_prices_params)
 
     def test_post_submit_financial_metrics_when_request_failed_should_raise_expected_exception_message(
         self,

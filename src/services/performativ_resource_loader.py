@@ -1,5 +1,6 @@
-from asyncio import run
+from asyncio import gather, run
 from datetime import date
+from typing import Awaitable
 
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -29,10 +30,12 @@ class PerformativResourceLoader:
 
         start_date_param = start_date.strftime("%Y%m%d")
         end_date_param = end_date.strftime("%Y%m%d")
-        return PerformativResource(
-            fx_rates=await self._get_fx_rates_by_dates(fx_pairs, start_date_param, end_date_param),
-            prices=await self._get_prices_by_dates(instrument_ids, start_date_param, end_date_param),
-        )
+        fx_rates_task = self._get_fx_rates_by_dates(fx_pairs, start_date_param, end_date_param)
+        prices_task = self._get_prices_by_dates(instrument_ids, start_date_param, end_date_param)
+
+        fx_rates, prices = await gather(fx_rates_task, prices_task)
+
+        return PerformativResource(fx_rates=fx_rates, prices=prices)
 
     def _get_unique_fx_pairs(self, positions_df: DataFrame, target_currency: str) -> NDArray:
         return (  # type: ignore
@@ -43,12 +46,14 @@ class PerformativResourceLoader:
     def _get_unique_instrument_ids(self, positions_df: DataFrame) -> NDArray:
         return positions_df["instrument_id"].unique()  # type: ignore
 
-    async def _get_fx_rates_by_dates(self, fx_pairs: NDArray, start_date: str, end_date: str) -> FxRatesData:
+    async def _get_fx_rates_by_dates(self, fx_pairs: NDArray, start_date: str, end_date: str) -> Awaitable[FxRatesData]:
         return await self._performativ_api_repo.get_fx_rates_by_dates(
             params=GetFxRatesParams(pairs=",".join(fx_pairs), start_date=start_date, end_date=end_date)
         )
 
-    async def _get_prices_by_dates(self, instrument_ids: NDArray, start_date: str, end_date: str) -> PricesData:
+    async def _get_prices_by_dates(
+        self, instrument_ids: NDArray, start_date: str, end_date: str
+    ) -> Awaitable[PricesData]:
         return await self._performativ_api_repo.get_instruments_prices_by_dates(
             params=[
                 GetInstrumentPricesParams(instrument_id=instrument_id, start_date=start_date, end_date=end_date)

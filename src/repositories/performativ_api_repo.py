@@ -1,5 +1,6 @@
-from asyncio import run
+from asyncio import gather, run
 from dataclasses import asdict
+from typing import Awaitable
 
 from httpx import AsyncClient
 
@@ -32,17 +33,20 @@ class PerformativApiRepo:
         except Exception as ex:
             raise PerformativApiRepoException(f"Failed to get {endpoint} data") from ex
 
-    async def get_fx_rates_by_dates(self, params: GetFxRatesParams) -> FxRatesData:
+    async def get_fx_rates_by_dates(self, params: GetFxRatesParams) -> Awaitable[FxRatesData]:
         return FxRatesData(items=await self._get("fx-rates", params))  # type: ignore
 
-    async def get_instruments_prices_by_dates(self, params: list[GetInstrumentPricesParams]) -> PricesData:
-        response = {}
-        for param in params:
-            resp = await self._get_instrument_prices_by_dates(param)
-            response.update(resp.items)
-        return PricesData(items=response)
+    async def get_instruments_prices_by_dates(self, params: list[GetInstrumentPricesParams]) -> Awaitable[PricesData]:
+        tasks = [self._get_instrument_prices_by_dates(param) for param in params]
+        results = await gather(*tasks)
 
-    async def _get_instrument_prices_by_dates(self, params: GetInstrumentPricesParams) -> PricesData:
+        prices_data = {}
+        for result in results:
+            prices_data.update(result.items)
+
+        return PricesData(items=prices_data)
+
+    async def _get_instrument_prices_by_dates(self, params: GetInstrumentPricesParams) -> Awaitable[PricesData]:
         return PricesData(items=await self._get("prices", params))  # type: ignore
 
     def post_submit_financial_metrics(self, payload: PostSubmitPayload) -> dict[str, str]:
@@ -51,7 +55,7 @@ class PerformativApiRepo:
         except Exception as ex:
             raise PerformativApiRepoException("Failed to post submit data") from ex
 
-    async def _post_submit_financial_metrics(self, payload: PostSubmitPayload):
+    async def _post_submit_financial_metrics(self, payload: PostSubmitPayload) -> Awaitable[dict[str, str]]:
         endpoint = "submit"
         response = await self.session.post(url=f"{self.url}/{endpoint}", json=payload.model_dump())
         response.raise_for_status()

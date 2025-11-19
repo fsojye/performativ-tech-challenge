@@ -6,6 +6,7 @@ pytest
 pytest-cov
 
 dotenv
-requests
+httpx
 pandas
 pydantic
+six==1.17.0

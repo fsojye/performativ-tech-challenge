@@ -1,3 +1,4 @@
+from asyncio import run
 from datetime import date
 
 from numpy.typing import NDArray
@@ -18,7 +19,10 @@ class PerformativResourceLoader:
         self._positions_data = positions_data
         self._performativ_api_repo = performativ_api_repo or PerformativApiRepo()
 
-    def load_resources(self, target_currency: str, start_date: date, end_date: date) -> PerformativResource:
+    def load_resources(self, target_currency: str, start_date: date, end_date: date):
+        return run(self._load_resources(target_currency, start_date, end_date))
+
+    async def _load_resources(self, target_currency: str, start_date: date, end_date: date) -> PerformativResource:
         positions_df = DataFrame(self._positions_data.model_dump()["positions"])
         fx_pairs = self._get_unique_fx_pairs(positions_df, target_currency)
         instrument_ids = self._get_unique_instrument_ids(positions_df)
@@ -26,8 +30,8 @@ class PerformativResourceLoader:
         start_date_param = start_date.strftime("%Y%m%d")
         end_date_param = end_date.strftime("%Y%m%d")
         return PerformativResource(
-            fx_rates=self._get_fx_rates_by_dates(fx_pairs, start_date_param, end_date_param),
-            prices=self._get_prices_by_dates(instrument_ids, start_date_param, end_date_param),
+            fx_rates=await self._get_fx_rates_by_dates(fx_pairs, start_date_param, end_date_param),
+            prices=await self._get_prices_by_dates(instrument_ids, start_date_param, end_date_param),
         )
 
     def _get_unique_fx_pairs(self, positions_df: DataFrame, target_currency: str) -> NDArray:
@@ -39,13 +43,13 @@ class PerformativResourceLoader:
     def _get_unique_instrument_ids(self, positions_df: DataFrame) -> NDArray:
         return positions_df["instrument_id"].unique()  # type: ignore
 
-    def _get_fx_rates_by_dates(self, fx_pairs: NDArray, start_date: str, end_date: str) -> FxRatesData:
-        return self._performativ_api_repo.get_fx_rates_by_dates(
+    async def _get_fx_rates_by_dates(self, fx_pairs: NDArray, start_date: str, end_date: str) -> FxRatesData:
+        return await self._performativ_api_repo.get_fx_rates_by_dates(
             params=GetFxRatesParams(pairs=",".join(fx_pairs), start_date=start_date, end_date=end_date)
         )
 
-    def _get_prices_by_dates(self, instrument_ids: NDArray, start_date: str, end_date: str) -> PricesData:
-        return self._performativ_api_repo.get_instruments_prices_by_dates(
+    async def _get_prices_by_dates(self, instrument_ids: NDArray, start_date: str, end_date: str) -> PricesData:
+        return await self._performativ_api_repo.get_instruments_prices_by_dates(
             params=[
                 GetInstrumentPricesParams(instrument_id=instrument_id, start_date=start_date, end_date=end_date)
                 for instrument_id in instrument_ids

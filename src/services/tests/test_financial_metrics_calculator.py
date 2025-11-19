@@ -1,13 +1,13 @@
 from unittest.mock import Mock
 
-from pandas import DataFrame, date_range
 import pytest
+from pandas import DataFrame, date_range
 
-from models.positions_data import PositionDTO, PositionsData
-from services.financial_metrics_calculator import FinancialMetricsCalculator, FinancialMetricsCalculatorException
 from entities.financial_metrics import FinancialMetrics
 from models.performativ_api import FxRateData, FxRatesData, PriceData, PricesData
 from models.performativ_resource import PerformativResource
+from models.positions_data import PositionDTO, PositionsData
+from services.financial_metrics_calculator import FinancialMetricsCalculator, FinancialMetricsCalculatorException
 
 
 class TestFinancialMetricsCalculator:
@@ -56,9 +56,11 @@ class TestFinancialMetricsCalculator:
         test_fx_rates_data = FxRatesData(items={})
 
         with pytest.raises(FinancialMetricsCalculatorException) as ex:
-            self.calculator._get_fx_pair_dataframe(date_range("2023-01-01", "2023-01-01"), "EUR", "USD", test_fx_rates_data)
+            self.calculator._get_fx_pair_dataframe(
+                date_range("2023-01-01", "2023-01-01"), "EUR", "USD", test_fx_rates_data
+            )
 
-        assert f"Fx rates data is not available for EURUSD" in str(ex)
+        assert "Fx rates data is not available for EURUSD" in str(ex)
 
     def test_get_fx_pair_dataframe_when_same_local_target_should_return_value_one(self):
         test_fx_rates_data = FxRatesData(items={})
@@ -69,11 +71,12 @@ class TestFinancialMetricsCalculator:
         assert isinstance(actual, DataFrame)
         assert actual["rate"].to_list() == [1] * len(test_date_index)
 
-
     def test_get_instrument_prices_dataframe_when_fx_pair_not_in_resource_should_raise_expected_exception_message(self):
         test_fx_rates_data = FxRatesData(items={})
 
         with pytest.raises(FinancialMetricsCalculatorException) as ex:
-            self.calculator._get_instrument_prices_dataframe(date_range("2023-01-01", "2023-01-01"), "1001", test_fx_rates_data)
+            self.calculator._get_instrument_prices_dataframe(
+                date_range("2023-01-01", "2023-01-01"), "1001", test_fx_rates_data
+            )
 
-        assert f"Prices data is not available for 1001" in str(ex)
+        assert "Prices data is not available for 1001" in str(ex)

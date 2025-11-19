@@ -46,19 +46,19 @@ class MainController:
         try:
             return self._positions_data_repo.get()
         except Exception as e:
-            raise MainControllerException(str(e)) from e
+            raise MainControllerException("Failed to load positions data from file") from e
 
     def _run(self) -> tuple[str, str]:
         financial_metrics = self.financial_metrics_calculator.calculate(
             self.target_currency, self.start_date, self.end_date
         )
-        post_submit_payload = financial_metrics.to_submit_api_payload(config.VALUE_PRECISION)
-
+        financial_metrics_post_submit_payload = financial_metrics.to_submit_api_payload(config.VALUE_PRECISION)
         submit_result = json.dumps(
-            self.performativ_api_repo.post_submit_financial_metrics(post_submit_payload),
+            self.performativ_api_repo.post_submit_financial_metrics(financial_metrics_post_submit_payload),
             indent=4,
         )
-        return post_submit_payload.model_dump_json(indent=4), submit_result
+        financial_metrics_result = financial_metrics_post_submit_payload.model_dump_json(indent=4)
+        return financial_metrics_result, submit_result
 
 
 class MainControllerException(Exception):

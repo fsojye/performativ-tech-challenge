@@ -1,5 +1,7 @@
+from decimal import Decimal
+
 from numpy import nan
-from pandas import Series, date_range
+from pandas import DatetimeIndex, Series, date_range
 
 from entities.financial_metrics import PositionMetric
 from services.basket_calculator import BasketCalculator
@@ -22,7 +24,7 @@ class TestBasketCalculator:
             [0.0, 1020.1, 1040.4, 1060.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             [nan, 0.0, 1020.1, 1040.4, 1060.9, 0.0, 0.0, 0.0, 0.0, 0.0],
         ]
-        expected_value_series = [0.0, 2040.2, 3100.9, 3162.2000000000003, 1060.9, 0.0, 0.0, 0.0, 0.0, 0.0]
+        expected_value_series = [0.0, 2040.2, 3100.9, 3162.2, 1060.9, 0.0, 0.0, 0.0, 0.0, 0.0]
         test_value_start_series = [
             [0.0, 1030.2, 1020.1, 1040.4, 1060.9, 0.0, 0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -45,8 +47,8 @@ class TestBasketCalculator:
         expected_return_per_period_percentage_series = [
             0.0,
             -0.00980392156862745,
-            0.009933559145388222,
-            0.01976845431971363,
+            0.009933559145388224,
+            0.019768454319713632,
             0.02615267851495794,
             0.02931473277405976,
             0.0,
@@ -58,21 +60,26 @@ class TestBasketCalculator:
         for i in range(0, 4):
             calculator.add_to_basket(
                 PositionMetric(
-                    is_open=Series(test_is_open_series[i], index=test_date_index),
-                    price=Series(0.0, index=test_date_index),
-                    value=Series(test_value_series[i], index=test_date_index),
-                    value_start=Series(test_value_start_series[i], index=test_date_index),
-                    return_per_period=Series(test_return_per_period_series[i], index=test_date_index),
-                    return_per_period_percentage=Series(
-                        test_return_per_period_percentage_series[i], index=test_date_index
+                    is_open=self._to_decimal_series(test_is_open_series[i], test_date_index),
+                    price=self._to_decimal_series([0] * 10, test_date_index),
+                    value=self._to_decimal_series(test_value_series[i], test_date_index),
+                    value_start=self._to_decimal_series(test_value_start_series[i], test_date_index),
+                    return_per_period=self._to_decimal_series(test_return_per_period_series[i], test_date_index),
+                    return_per_period_percentage=self._to_decimal_series(
+                        test_return_per_period_percentage_series[i], test_date_index
                     ),
                 )
             )
 
         actual = calculator.calculate()
 
-        assert actual.is_open.to_list() == expected_is_open_series
-        assert actual.price.to_list() == [0.0] * 10
-        assert actual.value.to_list() == expected_value_series
-        assert actual.return_per_period.to_list() == expected_return_per_period_series
-        assert actual.return_per_period_percentage.to_list() == expected_return_per_period_percentage_series
+        assert actual.is_open.astype(float).to_list() == expected_is_open_series
+        assert actual.price.astype(float).to_list() == [0.0] * 10
+        assert actual.value.astype(float).to_list() == expected_value_series
+        assert actual.return_per_period.astype(float).to_list() == expected_return_per_period_series
+        assert (
+            actual.return_per_period_percentage.astype(float).to_list() == expected_return_per_period_percentage_series
+        )
+
+    def _to_decimal_series(self, floats: list[float], date_index: DatetimeIndex) -> Series[Decimal]:
+        return Series([Decimal(str(f)) for f in floats], index=date_index)

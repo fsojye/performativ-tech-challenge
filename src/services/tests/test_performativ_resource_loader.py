@@ -2,8 +2,9 @@ from datetime import date
 from unittest.mock import Mock
 
 import pytest
+from numpy import int64
 
-from models.performativ_api_params import GetFxRatesParams
+from models.performativ_api import GetFxRatesParams, GetInstrumentPricesParams
 from models.performativ_resource import PerformativResource
 from models.positions_data import PositionDTO, PositionsData
 from services.performativ_resource_loader import PerformativResourceLoader
@@ -67,7 +68,7 @@ class TestPerformativResourceLoader:
     ):
         mock_response = {"test": "data"}
         self.mock_performativ_api_repo.get_fx_rates_by_dates.return_value = mock_response
-        self.mock_performativ_api_repo.get_instrument_prices_by_dates.return_value = mock_response
+        self.mock_performativ_api_repo.get_instruments_prices_by_dates.return_value = mock_response
         instrument_ids = set(map(lambda pos: pos.instrument_id, self.test_positions_data.positions))
 
         actual = self.service.load_resources(
@@ -83,4 +84,11 @@ class TestPerformativResourceLoader:
         self.mock_performativ_api_repo.get_fx_rates_by_dates.assert_called_once_with(
             params=GetFxRatesParams(start_date="20230101", end_date="20231231", pairs="EURUSD,GBPUSD")
         )
-        assert self.mock_performativ_api_repo.get_instrument_prices_by_dates.call_count == len(instrument_ids)
+        self.mock_performativ_api_repo.get_instruments_prices_by_dates.assert_called_once_with(
+            params=[
+                GetInstrumentPricesParams(
+                    start_date="20230101", end_date="20231231", instrument_id=int64(instrument_id)
+                )
+                for instrument_id in instrument_ids
+            ]
+        )

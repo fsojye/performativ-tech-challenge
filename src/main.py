@@ -1,3 +1,4 @@
+import traceback
 from argparse import ArgumentParser
 
 from controllers.main_controller import MainController
@@ -49,8 +50,8 @@ if __name__ == "__main__":
     try:
         result = main()
         print(result)
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    else:
         sys.exit(0)
+    except Exception:
+        err = traceback.format_exc()
+        print(err)
+        sys.exit(1)

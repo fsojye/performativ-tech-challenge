@@ -1,8 +1,10 @@
-from numpy import nan
+from decimal import Decimal
+
 from numpy.typing import NDArray
 from pandas import DataFrame, DatetimeIndex, Series, Timedelta, to_datetime
 
 from entities.financial_metrics import PositionMetric
+from models.decimals import NAN, ONE, ZERO
 from models.position_metric_fields import PositionMetricFields
 from models.positions_data import PositionDTO
 
@@ -15,75 +17,78 @@ class PositionCalculator:
         self._open_date = to_datetime(self._position.open_date)
         self._close_date = to_datetime(self._position.close_date)
 
-    def calculate_open_value(self) -> float:
+    def _calculate_open_value(self) -> Decimal:
         open_fx_rate = self._fx_rates["rate"].get(self._position.open_date)
-        open_fx_rate = open_fx_rate if open_fx_rate is not None else nan
+        open_fx_rate = open_fx_rate if open_fx_rate is not None else NAN
         return self._position.open_price * open_fx_rate * self._position.quantity
 
-    def calculate_close_value(self) -> float:
+    def _calculate_close_value(self) -> Decimal:
         close_fx_rate = self._fx_rates["rate"].get(self._position.close_date)
-        close_price = self._position.close_price if self._position.close_price is not None else nan
-        close_fx_rate = close_fx_rate if close_fx_rate is not None else nan
+        close_price = self._position.close_price if self._position.close_price is not None else NAN
+        close_fx_rate = close_fx_rate if close_fx_rate is not None else NAN
         return close_price * close_fx_rate * self._position.quantity
 
-    def calculate_price_local(self, date_index: DatetimeIndex) -> Series[float]:
-        price = Series(0.0, index=date_index).where(self._day_is_pre_open(date_index), self._prices["price"])
-        return price.mask(self._day_is_pre_open(date_index), 0)
+    def calculate_price_local(self, date_index: DatetimeIndex) -> Series[Decimal]:
+        price = Series(ZERO, index=date_index).where(self._day_is_pre_open(date_index), self._prices["price"])
+        return price.mask(self._day_is_pre_open(date_index), ZERO)
 
-    def calculate_price(self, date_index: DatetimeIndex, price_local: Series[float]) -> Series[float]:
+    def calculate_price(self, date_index: DatetimeIndex, price_local: Series[Decimal]) -> Series[Decimal]:
         price_local = price_local.reindex(date_index)
         fx_rates = self._fx_rates["rate"].reindex(date_index)
 
         return price_local * fx_rates
 
-    def calculate_is_open(self, date_index: DatetimeIndex) -> Series[float]:
-        is_open = Series(0.0, index=date_index).mask(self._day_is_within_open(date_index), 1.0)
+    def calculate_is_open(self, date_index: DatetimeIndex) -> Series[Decimal]:
+        is_open = Series(ZERO, index=date_index).mask(self._day_is_within_open(date_index), ONE)
         return is_open
 
-    def calculate_quantity(self, date_index: DatetimeIndex, is_open: Series[float]) -> Series[float]:
+    def calculate_quantity(self, date_index: DatetimeIndex, is_open: Series[Decimal]) -> Series[Decimal]:
         is_open = is_open.reindex(date_index)
         return is_open * self._position.quantity
 
     def calculate_value_local(
-        self, date_index: DatetimeIndex, price_local: Series[float], quantity: Series[float]
-    ) -> Series[float]:
+        self, date_index: DatetimeIndex, price_local: Series[Decimal], quantity: Series[Decimal]
+    ) -> Series[Decimal]:
         price_local = price_local.reindex(date_index)
         quantity = quantity.reindex(date_index)
         return price_local * quantity
 
-    def calculate_value(self, date_index: DatetimeIndex, value_local: Series[float]) -> Series[float]:
+    def calculate_value(self, date_index: DatetimeIndex, value_local: Series[Decimal]) -> Series[Decimal]:
         value_local = value_local.reindex(date_index)
         fx_rates = self._fx_rates["rate"].reindex(date_index)
         return value_local * fx_rates
 
-    def calculate_value_start(self, date_index: DatetimeIndex, value: Series[float]) -> Series[float]:
-        open_value = self.calculate_open_value()
-        value_start = value.reindex(date_index).shift(1, fill_value=0.0)
+    def calculate_value_start(self, date_index: DatetimeIndex, value: Series[Decimal]) -> Series[Decimal]:
+        open_value = self._calculate_open_value()
+        value_start = value.reindex(date_index).shift(1, fill_value=ZERO)
         value_start = value_start.mask(date_index == date_index[0].date(), value)
         value_start = value_start.mask(date_index == self._position.open_date, open_value)
         return value_start
 
-    def calculate_value_end(self, date_index: DatetimeIndex, value: Series[float]) -> Series[float]:
-        close_value = self.calculate_close_value()
+    def calculate_value_end(self, date_index: DatetimeIndex, value: Series[Decimal]) -> Series[Decimal]:
+        close_value = self._calculate_close_value()
         value_end = value.where(self._day_is_pre_close(date_index)).mask(
             date_index == self._position.close_date, close_value
         )
         return value_end
 
     def calculate_return_per_period(
-        self, date_index: DatetimeIndex, value_end: Series[float], value_start: Series[float]
-    ) -> Series[float]:
-        return_per_period = Series(0.0, index=date_index).mask(
+        self, date_index: DatetimeIndex, value_end: Series[Decimal], value_start: Series[Decimal]
+    ) -> Series[Decimal]:
+        return_per_period = Series(ZERO, index=date_index).mask(
             self._day_is_within_open_or_is_close(date_index), value_end - value_start
         )
         return return_per_period
 
     def calculate_return_per_period_percentage(
-        self, date_index: DatetimeIndex, value_start: Series[float], return_per_period: Series[float]
-    ) -> Series[float]:
-        return_per_period_percentage = Series(0.0, index=date_index).mask(
-            value_start != 0, return_per_period / value_start
+        self, date_index: DatetimeIndex, value_start: Series[Decimal], return_per_period: Series[Decimal]
+    ) -> Series[Decimal]:
+        return_per_period_percentage = Series(ZERO, index=date_index)
+        mask = value_start != ZERO
+        return_per_period_percentage[mask] = return_per_period[mask].combine(
+            value_start[mask], lambda ret, start: ret / start if start != 0 else ZERO
         )
+
         return return_per_period_percentage
 
     def calculate(self, date_index: DatetimeIndex) -> PositionMetric:

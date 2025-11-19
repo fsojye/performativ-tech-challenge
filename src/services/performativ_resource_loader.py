@@ -3,7 +3,7 @@ from datetime import date
 from numpy.typing import NDArray
 from pandas import DataFrame
 
-from models.performativ_api_params import GetFxRatesParams, GetInstrumentPricesParams
+from models.performativ_api import FxRatesData, GetFxRatesParams, GetInstrumentPricesParams, PricesData
 from models.performativ_resource import PerformativResource
 from models.positions_data import PositionsData
 from repositories.performativ_api_repo import PerformativApiRepo
@@ -39,21 +39,15 @@ class PerformativResourceLoader:
     def _get_unique_instrument_ids(self, positions_df: DataFrame) -> NDArray:
         return positions_df["instrument_id"].unique()  # type: ignore
 
-    def _get_fx_rates_by_dates(self, fx_pairs: NDArray, start_date: str, end_date: str) -> dict:
+    def _get_fx_rates_by_dates(self, fx_pairs: NDArray, start_date: str, end_date: str) -> FxRatesData:
         return self._performativ_api_repo.get_fx_rates_by_dates(
             params=GetFxRatesParams(pairs=",".join(fx_pairs), start_date=start_date, end_date=end_date)
         )
 
-    def _get_prices_by_dates(self, instrument_ids: NDArray, start_date: str, end_date: str) -> dict:
-        instrument_prices = {}
-        for instrument_id in instrument_ids:
-            instrument_prices.update(
-                self._performativ_api_repo.get_instrument_prices_by_dates(
-                    params=GetInstrumentPricesParams(
-                        instrument_id=instrument_id,
-                        start_date=start_date,
-                        end_date=end_date,
-                    )
-                )
-            )
-        return instrument_prices
+    def _get_prices_by_dates(self, instrument_ids: NDArray, start_date: str, end_date: str) -> PricesData:
+        return self._performativ_api_repo.get_instruments_prices_by_dates(
+            params=[
+                GetInstrumentPricesParams(instrument_id=instrument_id, start_date=start_date, end_date=end_date)
+                for instrument_id in instrument_ids
+            ]
+        )

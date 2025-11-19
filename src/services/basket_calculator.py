@@ -32,22 +32,23 @@ class BasketCalculator:
             ),
         )
 
-    def _is_open_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[float]:
-        return basket_aggregate.max()
+    def _is_open_calculate(self, is_open_aggregate: DataFrameGroupBy) -> Series[float]:
+        return is_open_aggregate.max()
 
-    def _price_local_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[float]:
-        return basket_aggregate.all() * 0.0
+    def _price_local_calculate(self, price_local_aggregate: DataFrameGroupBy) -> Series[float]:
+        return price_local_aggregate.all() * 0.0
 
-    def _value_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[float]:
-        return basket_aggregate.sum()
+    def _value_calculate(self, value_aggregate: DataFrameGroupBy) -> Series[float]:
+        return value_aggregate.sum()
 
-    def _return_per_period_calculate(self, basket_aggregate: DataFrameGroupBy) -> Series[float]:
-        return basket_aggregate.sum()
+    def _return_per_period_calculate(self, return_per_period_aggregate: DataFrameGroupBy) -> Series[float]:
+        return return_per_period_aggregate.sum()
 
     def _return_per_period_percentage_calculate(
         self,
-        basket_aggregate: DataFrameGroupBy,
+        return_per_period_aggregate: DataFrameGroupBy,
         value_start_aggregate: DataFrameGroupBy,
     ) -> Series[float]:
         value_start_aggregate_sum = value_start_aggregate.sum()
-        return (basket_aggregate.sum() / value_start_aggregate_sum).mask(value_start_aggregate_sum == 0, 0.0)
+        return_per_period_aggregate_sum = self._return_per_period_calculate(return_per_period_aggregate)
+        return (return_per_period_aggregate_sum / value_start_aggregate_sum).mask(value_start_aggregate_sum == 0, 0.0)

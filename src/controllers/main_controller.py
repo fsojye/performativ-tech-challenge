@@ -1,5 +1,4 @@
 import json
-from dataclasses import asdict
 from datetime import date
 
 from models.positions_data import PositionsData
@@ -31,7 +30,7 @@ class MainController:
         )
         self.performativ_api_repo = performativ_api_repo or PerformativApiRepo()
 
-    def run(self) -> str:
+    def run(self) -> tuple[str, str]:
         try:
             return self._run()
         except Exception as e:
@@ -49,19 +48,17 @@ class MainController:
         except Exception as e:
             raise MainControllerException(str(e)) from e
 
-    def _run(self) -> str:
+    def _run(self) -> tuple[str, str]:
         financial_metrics = self.financial_metrics_calculator.calculate(
             self.target_currency, self.start_date, self.end_date
         )
         post_submit_payload = financial_metrics.to_submit_api_payload(config.VALUE_PRECISION)
 
-        result = json.dumps(
+        submit_result = json.dumps(
             self.performativ_api_repo.post_submit_financial_metrics(post_submit_payload),
             indent=4,
         )
-
-        print(json.dumps(asdict(post_submit_payload), indent=4))
-        return result
+        return post_submit_payload.model_dump_json(indent=4), submit_result
 
 
 class MainControllerException(Exception):

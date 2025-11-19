@@ -9,6 +9,7 @@ from pandas import (
 )
 
 from entities.financial_metrics import FinancialMetrics, PositionMetric
+from models.performativ_api import FxRatesData, PricesData
 from models.performativ_resource import PerformativResource
 from models.positions_data import PositionsData
 from services.basket_calculator import BasketCalculator
@@ -66,21 +67,16 @@ class FinancialMetricsCalculator:
     def _load_resource_data(self, target_currency: str, start_date: date, end_date: date) -> PerformativResource:
         return self._performativ_resource_loader.load_resources(target_currency, start_date, end_date)
 
-    def _get_fx_pair_dataframe(
-        self, date_series: DatetimeIndex, fx_pair: str, fx_rates_data: dict[str, dict[str, str]]
-    ) -> DataFrame:
-        fx_df = DataFrame(fx_rates_data.get(fx_pair, []), index=date_series)
-        fx_df = fx_df.assign(
+    def _get_fx_pair_dataframe(self, date_series: DatetimeIndex, fx_pair: str, fx_rates_data: FxRatesData) -> DataFrame:
+        fx_rates = fx_rates_data.model_dump()["items"].get(fx_pair, [])
+        fx_df = DataFrame(fx_rates, index=date_series)
+        return fx_df.assign(
             date=to_datetime(fx_df["date"] if "date" in fx_df.columns else date_series),
-            rate=fx_df["rate"] if "rate" in fx_df.columns else 1.0,
+            rate=fx_df["rate"] if "rate" in fx_df.columns else 1,
         )
-        return fx_df
 
     def _get_instrument_prices_dataframe(
-        self,
-        date_series: DatetimeIndex,
-        instrument_id: str,
-        prices_data: dict[str, dict[str, str]],
+        self, date_series: DatetimeIndex, instrument_id: str, prices_data: PricesData
     ) -> DataFrame:
-        prices_df = DataFrame(prices_data[instrument_id], index=date_series)
-        return prices_df
+        prices = prices_data.model_dump()["items"][instrument_id]
+        return DataFrame(prices, index=date_series)

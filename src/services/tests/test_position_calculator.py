@@ -33,14 +33,14 @@ class TestPositionCalculator:
     def test_calculate_open_value_should_return_expected_series(self):
         self.calculator.load_calculation_requirements(self.test_position, self.test_fx_rates, self.test_prices)
 
-        actual = self.calculator.calculate_open_value()
+        actual = self.calculator._calculate_open_value()
 
         assert actual == 1030.2
 
     def test_calculate_close_value_should_return_expected_series(self):
         self.calculator.load_calculation_requirements(self.test_position, self.test_fx_rates, self.test_prices)
 
-        actual = self.calculator.calculate_close_value()
+        actual = self.calculator._calculate_close_value()
 
         assert actual == 1092
 
@@ -49,7 +49,7 @@ class TestPositionCalculator:
         self.test_position.close_date = None
         self.calculator.load_calculation_requirements(self.test_position, self.test_fx_rates, self.test_prices)
 
-        actual = self.calculator.calculate_close_value()
+        actual = self.calculator._calculate_close_value()
 
         assert isna(actual)
 

@@ -1,9 +1,10 @@
+import traceback
 from argparse import ArgumentParser
 
 from controllers.main_controller import MainController
 
 
-def main(argv: list[str] | None = None) -> str:
+def main(argv: list[str] | None = None) -> tuple[str, str]:
     parser = ArgumentParser(
         description="Calculate simplified financial metrics for a set of positions \
             over a specified time window."
@@ -47,10 +48,11 @@ if __name__ == "__main__":
     import sys
 
     try:
-        result = main()
-        print(result)
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    else:
+        calculation_result, submit_result = main()
+        print(calculation_result)
+        print(submit_result)
         sys.exit(0)
+    except Exception:
+        err = traceback.format_exc()
+        print(err)
+        sys.exit(1)

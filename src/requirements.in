@@ -4,8 +4,10 @@ types-requests
 
 pytest
 pytest-cov
+pytest-asyncio
 
 dotenv
-requests
+httpx
 pandas
 pydantic
+six==1.17.0

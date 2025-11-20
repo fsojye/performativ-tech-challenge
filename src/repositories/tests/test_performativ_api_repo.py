@@ -46,7 +46,7 @@ class TestPerformativApiRepo:
         self,
     ):
         expected = FxRatesData(items={"SEKUSD": [{"date": "2023-01-01", "rate": 2}]})
-        self.mock_response.json = Mock(return_value = expected.model_dump()["items"])
+        self.mock_response.json = Mock(return_value=expected.model_dump()["items"])
         self.mock_response.raise_for_status = Mock()
         self.repo.client.get = AsyncMock(return_value=self.mock_response)
 
@@ -74,7 +74,7 @@ class TestPerformativApiRepo:
         self,
     ):
         expected = PricesData(items={"1": [{"date": "2023-01-01", "price": 2}]})
-        self.mock_response.json = Mock(return_value = expected.model_dump()["items"])
+        self.mock_response.json = Mock(return_value=expected.model_dump()["items"])
         self.mock_response.raise_for_status = Mock()
         self.repo.client.get = AsyncMock(return_value=self.mock_response)
 

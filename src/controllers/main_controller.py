@@ -53,6 +53,7 @@ class MainController:
             self.target_currency, self.start_date, self.end_date
         )
         financial_metrics_post_submit_payload = financial_metrics.to_submit_api_payload(config.VALUE_PRECISION)
+        print(financial_metrics_post_submit_payload.model_dump_json(indent=4))
         submit_result = json.dumps(
             self.performativ_api_repo.post_submit_financial_metrics(financial_metrics_post_submit_payload),
             indent=4,

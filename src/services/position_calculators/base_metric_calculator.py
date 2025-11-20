@@ -1,10 +1,8 @@
 from numpy import nan
-from pandas import DataFrame, DatetimeIndex, Series, Timedelta, to_datetime
 from numpy.typing import NDArray
+from pandas import Series, Timedelta, to_datetime
 
-from src.models.calculator_context import CalculatorContext
-from src.models.position_metric_fields import PositionMetricFields
-from src.models.positions_data import PositionDTO
+from models.calculator_context import CalculatorContext
 
 
 class BaseMetricCalculator:
@@ -18,22 +16,22 @@ class BaseMetricCalculator:
         self._calculated: Series | None = None
 
     def _day_is_start(self) -> NDArray:
-        return self.date_index == self.date_index[0]
+        return self.date_index == self.date_index[0]  # type: ignore
 
     def _day_is_pre_open(self) -> NDArray:
-        return self.date_index < self.open_date
+        return self.date_index < self.open_date  # type: ignore
 
     def _day_is_open(self) -> NDArray:
-        return self.date_index == self.open_date
+        return self.date_index == self.open_date  # type: ignore
 
-    def _day_is_after_open_inclusive(self):
-        return self.date_index >= self.open_date
+    def _day_is_after_open_inclusive(self) -> NDArray:
+        return self.date_index >= self.open_date  # type: ignore
 
     def _day_is_between_inclusive_open_and_exclusive_close(self) -> NDArray:
         return self._day_is_after_open_inclusive() & self._day_is_pre_close()  # type: ignore
 
-    def _day_is_between_inclusive_open_and_close(self):
-        return self._day_is_between_inclusive_open_and_exclusive_close() | self._day_is_close()
+    def _day_is_between_inclusive_open_and_close(self) -> NDArray:
+        return self._day_is_between_inclusive_open_and_exclusive_close() | self._day_is_close()  # type: ignore
 
     def _day_is_pre_close(self) -> NDArray:
         close_bound = self.close_date or (to_datetime(self.date_index[-1]) + Timedelta(days=1))
@@ -57,7 +55,7 @@ class BaseMetricCalculator:
         raise NotImplementedError()
 
     @property
-    def calculated(self):
+    def calculated(self) -> Series:
         if self._calculated is None:
             self._calculated = self.calculate()
         return self._calculated

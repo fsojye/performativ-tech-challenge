@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from pandas import DataFrame, DatetimeIndex
 
-from src.models.positions_data import PositionDTO
+from models.positions_data import PositionDTO
 
 
 @dataclass

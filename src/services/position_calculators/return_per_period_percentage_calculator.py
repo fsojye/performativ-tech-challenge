@@ -1,4 +1,5 @@
 from pandas import Series
+
 from services.position_calculators.base_metric_calculator import BaseMetricCalculator
 from services.position_calculators.return_per_period_calculator import ReturnPerPeriodCalculator
 from services.position_calculators.value_start_calculator import ValueStartCalculator
@@ -13,7 +14,7 @@ class ReturnPerPeriodPercentageCalculator(BaseMetricCalculator):
         self.return_per_period_calculator = return_per_period_calculator or ReturnPerPeriodCalculator()
         self.value_start_calculator = value_start_calculator or ValueStartCalculator()
 
-    def calculate(self):
+    def calculate(self) -> Series:
         value_start = self.value_start_calculator.calculated
         return_per_period = self.return_per_period_calculator.calculated
         return_per_period_percentage = Series(0.0, index=self.date_index)
